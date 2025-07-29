@@ -16,6 +16,7 @@ typedef struct Program {
     const char *relative_path;
     long last_mod;
 } Program;
+static Program *current_program = NULL;
 
 #define PROGRAM_CAP 50
 static struct Program_List {
@@ -23,16 +24,13 @@ static struct Program_List {
     int count;
 } programs = { 0 };
 
-static Program *current_program = NULL;
-
 typedef enum Mode {
     Mode_RENDER = 0,
     Mode_MENU,
 
     Mode_Count,
 } Mode;
-
-static Mode mode = Mode_RENDER;
+static Mode mode = Mode_MENU;
 
 Color get_color_alpha(int hex, unsigned char alpha) {
     return GetColor((hex << 8) | (alpha & 0xFF));

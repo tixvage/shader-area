@@ -13,7 +13,7 @@ void main()
     vec2 uv = fragTexCoord - vec2(0.5);
 
     float d = length(uv);
-    d -= 0.3;
+    d -= 0.5;
     d = abs(d);
     d = 0.01 / d;
     vec3 color = vec3(d);
