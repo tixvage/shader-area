@@ -107,7 +107,7 @@ int main(void) {
             default: break;
         }
         BeginDrawing();
-        ClearBackground(GetColor(0x181818FF));
+        ClearBackground(GetColor(0x111111FF));
         if (current_program && IsShaderValid(current_program->shader)) BeginShaderMode(current_program->shader);
         DrawTexture(tex, (WIDTH - HEIGHT) / 2, 0, WHITE);
         if (current_program) EndShaderMode();
@@ -115,7 +115,6 @@ int main(void) {
             case Mode_RENDER: {} break;
             case Mode_MENU: {
                 BeginBlendMode(BLEND_ALPHA);
-                DrawRectangle(0, 0, WIDTH, HEIGHT, get_color_alpha(0xFFFFFF, 0x22));
                 int padding = 40;
                 int alpha = 0xBB;
                 Rectangle rec = {
