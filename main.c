@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "raylib.h"
+#include "raymath.h"
 
 #define max(a, b) ((a) > (b) ? (a) : (b))
 #define min(a, b) ((a) < (b) ? (a) : (b))
@@ -17,8 +18,8 @@
 #define ROW_HEIGHT 50.f
 #define ROW_PADDING 10.f
 #define REC_PADDING 40.f
-#define SCROLLBAR_AREA_WIDTH 18.f
-#define SCROLLBAR_WIDTH 10.f
+#define SCROLLBAR_AREA_WIDTH 20.f
+#define SCROLLBAR_WIDTH 12.f
 
 typedef struct Program {
     Shader shader;
@@ -41,6 +42,20 @@ typedef enum Mode {
     Mode_Count,
 } Mode;
 static Mode mode = Mode_MENU;
+
+const Rectangle scrollbar_area = {
+    WIDTH - REC_PADDING - SCROLLBAR_AREA_WIDTH * 2,
+    0 + REC_PADDING + ROW_PADDING,
+    SCROLLBAR_AREA_WIDTH,
+    HEIGHT - REC_PADDING * 2 - ROW_PADDING * 2,
+};
+
+const Rectangle scrollbar_max = {
+    scrollbar_area.x + (SCROLLBAR_AREA_WIDTH - SCROLLBAR_WIDTH) / 2,
+    scrollbar_area.y + (SCROLLBAR_AREA_WIDTH - SCROLLBAR_WIDTH) / 2,
+    SCROLLBAR_WIDTH,
+    scrollbar_area.height - (SCROLLBAR_AREA_WIDTH - SCROLLBAR_WIDTH),
+};
 
 Color get_color_alpha(int hex, unsigned char alpha) {
     return GetColor((hex << 8) | (alpha & 0xFF));
@@ -67,6 +82,8 @@ int main(void) {
     UnloadDirectoryFiles(files);
 
     float scroll = 0;
+    float saved_position;
+    Rectangle scrollbar = scrollbar_max;
 
     while (!WindowShouldClose()) {
         float dt = GetFrameTime();
@@ -148,34 +165,26 @@ int main(void) {
                     HEIGHT - REC_PADDING * 2 - ROW_PADDING * 2,
                 };
 
-                Rectangle scrollbar_area = {
-                    WIDTH - REC_PADDING - SCROLLBAR_AREA_WIDTH * 2,
-                    0 + REC_PADDING + ROW_PADDING,
-                    SCROLLBAR_AREA_WIDTH,
-                    HEIGHT - REC_PADDING * 2 - ROW_PADDING * 2,
-                };
-                DrawRectangleRounded(scrollbar_area, 0.3f, 20, get_color_alpha(0x404040, alpha));
-
-                Rectangle scrollbar_max = {
-                    scrollbar_area.x + (SCROLLBAR_AREA_WIDTH - SCROLLBAR_WIDTH) / 2,
-                    scrollbar_area.y + (SCROLLBAR_AREA_WIDTH - SCROLLBAR_WIDTH) / 2,
-                    SCROLLBAR_WIDTH,
-                    scrollbar_area.height - (SCROLLBAR_AREA_WIDTH - SCROLLBAR_WIDTH),
-                };
+                DrawRectangleRounded(scrollbar_area, 0.3f, 20, get_color_alpha(0x0B0B0B, alpha));
 
                 {
                     //TODO: one of the most confusing code I ever wrote, just don't touch for now it's really working
-                    Rectangle scrollbar = scrollbar_max;
                     float total_height = max(0, (ROW_HEIGHT + ROW_PADDING) * programs.count - ROW_PADDING);
                     scrollbar.height = total_height - valid_area.height > 0 ? scrollbar_max.height - ((total_height - valid_area.height) / valid_area.height) * scrollbar_max.height : scrollbar_max.height;
-                    scrollbar.y -= (scroll / valid_area.height) * scrollbar_max.height;
-                    Color color = get_color_alpha(0x111111, alpha);
+                    Color color = get_color_alpha(0x202020, alpha);
                     if (CheckCollisionPointRec(mouse_position, scrollbar)) {
                         color = ColorBrightness(color, 0.03f);
+                        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                            saved_position = mouse_position.y - scrollbar.y;
+                        }
                         if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
                             color = ColorBrightness(color, 0.03f);
+                            scrollbar.y = mouse_position.y - saved_position;
+                            scrollbar.y = scrollbar_max.y + clamp(scrollbar.y - scrollbar_max.y, 0, scrollbar_max.height - scrollbar.height);
+                            scroll = ((scrollbar_max.y - scrollbar.y) / scrollbar_max.height) * valid_area.height;
                         }
                     }
+                    scrollbar.y = scrollbar_max.y - (scroll / valid_area.height) * scrollbar_max.height;
                     DrawRectangleRounded(scrollbar, 0.3f, 20, color);
                 }
 
