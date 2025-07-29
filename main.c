@@ -3,12 +3,20 @@
 #include <stdlib.h>
 #include "raylib.h"
 
+#define max(a, b) ((a) > (b) ? (a) : (b))
+#define min(a, b) ((a) < (b) ? (a) : (b))
+#define clamp(x, lower, upper) min(max((x), (lower)), (upper))
+
 #define WIDTH 800
 #define HEIGHT 600
 #define SHADERS_DIR "./shaders"
 
 #define DEFAULT_TEXT_HEIGHT 20.f
 #define PROGRAM_LIST_TEXT_HEIGHT 30.f
+
+#define ROW_HEIGHT 50.f
+#define ROW_PADDING 10.f
+#define REC_PADDING 40.f
 
 typedef struct Program {
     Shader shader;
@@ -60,6 +68,7 @@ int main(void) {
 
     while (!WindowShouldClose()) {
         float dt = GetFrameTime();
+        Vector2 mouse_position = GetMousePosition();
         if (IsKeyPressed(KEY_TAB)) {
             mode++;
             if (mode >= Mode_Count) mode = 0;
@@ -97,12 +106,15 @@ int main(void) {
         switch (mode) {
             case Mode_RENDER: {} break;
             case Mode_MENU: {
-                scroll += GetMouseWheelMove() * dt * 200.f;
+                scroll += GetMouseWheelMove() * dt * 400.f;
                 if (IsKeyPressed(KEY_UP)) {
-                    scroll += 5;
+                    scroll += 20;
                 } else if (IsKeyPressed(KEY_DOWN)) {
-                    scroll -= 5;
+                    scroll -= 20;
                 }
+                printf("%f\n", scroll);
+                int limit = max(0, (ROW_HEIGHT + ROW_PADDING) * programs.count - (HEIGHT - REC_PADDING * 2 - ROW_PADDING * 2) - ROW_PADDING);
+                scroll = clamp(scroll, -limit, 0);
             } break;
             default: break;
         }
@@ -115,26 +127,31 @@ int main(void) {
             case Mode_RENDER: {} break;
             case Mode_MENU: {
                 BeginBlendMode(BLEND_ALPHA);
-                int padding = 40;
                 int alpha = 0xBB;
                 Rectangle rec = {
-                    0 + padding,
-                    0 + padding,
-                    WIDTH - padding * 2,
-                    HEIGHT - padding * 2,
+                    0 + REC_PADDING,
+                    0 + REC_PADDING,
+                    WIDTH - REC_PADDING * 2,
+                    HEIGHT - REC_PADDING * 2,
                 };
                 DrawRectangleRounded(rec, 0.1f, 20, get_color_alpha(0x181818, alpha));
-                int row_height = 50;
-                padding = 10;
-                rec.height = row_height;
-                rec.width -= padding * 2;
-                rec.x += padding;
-                rec.y -= row_height - scroll;
+                rec.height = ROW_HEIGHT;
+                rec.width -= ROW_PADDING * 2;
+                rec.x += ROW_PADDING;
+                rec.y -= ROW_HEIGHT - scroll;
+
+                Rectangle valid_area = {
+                    rec.x,
+                    REC_PADDING + ROW_PADDING,
+                    WIDTH - REC_PADDING * 2 - ROW_PADDING * 2,
+                    HEIGHT - REC_PADDING * 2 - ROW_PADDING * 2,
+                };
+                BeginScissorMode(valid_area.x, valid_area.y, valid_area.width, valid_area.height);
 
                 for (int i = 0; i < programs.count; i++) {
-                    rec.y += row_height + padding;
+                    rec.y += ROW_HEIGHT + ROW_PADDING;
                     Color color = get_color_alpha(0x331818, alpha);
-                    if (CheckCollisionPointRec(GetMousePosition(), rec)) {
+                    if (CheckCollisionPointRec(mouse_position, valid_area) && CheckCollisionPointRec(mouse_position, rec)) {
                         color = ColorBrightness(color, 0.1f);
                         if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
                             color = ColorBrightness(color, 0.3f);
@@ -145,8 +162,11 @@ int main(void) {
                         }
                     }
                     DrawRectangleRec(rec, color);
-                    DrawText(TextFormat("%s", programs.data[i].name), rec.x + padding, rec.y + (row_height / 2) - (PROGRAM_LIST_TEXT_HEIGHT / 2), PROGRAM_LIST_TEXT_HEIGHT, get_color_alpha(0, alpha));
+                    DrawText(TextFormat("%s", programs.data[i].name), rec.x + ROW_PADDING, rec.y + (ROW_HEIGHT / 2) - (PROGRAM_LIST_TEXT_HEIGHT / 2), PROGRAM_LIST_TEXT_HEIGHT, get_color_alpha(0, alpha));
                 }
+
+                EndScissorMode();
+
                 EndBlendMode();
             } break;
             default: break;
