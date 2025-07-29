@@ -114,7 +114,6 @@ int main(void) {
                 } else if (IsKeyPressed(KEY_DOWN)) {
                     scroll -= 20;
                 }
-                printf("%f\n", scroll);
                 int limit = max(0, (ROW_HEIGHT + ROW_PADDING) * programs.count - (HEIGHT - REC_PADDING * 2 - ROW_PADDING * 2) - ROW_PADDING);
                 scroll = clamp(scroll, -limit, 0);
             } break;
@@ -142,6 +141,13 @@ int main(void) {
                 rec.x += ROW_PADDING;
                 rec.y -= ROW_HEIGHT - scroll;
 
+                Rectangle valid_area = {
+                    rec.x,
+                    REC_PADDING + ROW_PADDING,
+                    WIDTH - REC_PADDING * 2 - ROW_PADDING * 2,
+                    HEIGHT - REC_PADDING * 2 - ROW_PADDING * 2,
+                };
+
                 Rectangle scrollbar_area = {
                     WIDTH - REC_PADDING - SCROLLBAR_AREA_WIDTH * 2,
                     0 + REC_PADDING + ROW_PADDING,
@@ -150,20 +156,19 @@ int main(void) {
                 };
                 DrawRectangleRounded(scrollbar_area, 0.3f, 20, get_color_alpha(0x444444, alpha));
 
-                Rectangle scrollbar = {
+                Rectangle scrollbar_max = {
                     scrollbar_area.x + (SCROLLBAR_AREA_WIDTH - SCROLLBAR_WIDTH) / 2,
                     scrollbar_area.y + (SCROLLBAR_AREA_WIDTH - SCROLLBAR_WIDTH) / 2,
                     SCROLLBAR_WIDTH,
                     scrollbar_area.height - (SCROLLBAR_AREA_WIDTH - SCROLLBAR_WIDTH),
                 };
-                DrawRectangleRounded(scrollbar, 0.3f, 20, get_color_alpha(0x222222, alpha));
+                //TODO: one of the most confusing code I ever wrote, just don't touch for now it's really working
+                Rectangle scrollbar = scrollbar_max;
+                float total_height = max(0, (ROW_HEIGHT + ROW_PADDING) * programs.count - ROW_PADDING);
+                scrollbar.height = total_height - valid_area.height > 0 ? scrollbar_max.height - ((total_height - valid_area.height) / valid_area.height) * scrollbar_max.height : scrollbar_max.height;
+                scrollbar.y -= ((float)scroll / valid_area.height) * scrollbar_max.height;
 
-                Rectangle valid_area = {
-                    rec.x,
-                    REC_PADDING + ROW_PADDING,
-                    WIDTH - REC_PADDING * 2 - ROW_PADDING * 2,
-                    HEIGHT - REC_PADDING * 2 - ROW_PADDING * 2,
-                };
+                DrawRectangleRounded(scrollbar, 0.3f, 20, get_color_alpha(0x222222, alpha));
 
                 //NOTE: pay attention when debugging
                 BeginScissorMode(valid_area.x, valid_area.y, valid_area.width, valid_area.height);
