@@ -17,6 +17,8 @@
 #define ROW_HEIGHT 50.f
 #define ROW_PADDING 10.f
 #define REC_PADDING 40.f
+#define SCROLLBAR_AREA_WIDTH 18.f
+#define SCROLLBAR_WIDTH 10.f
 
 typedef struct Program {
     Shader shader;
@@ -136,9 +138,25 @@ int main(void) {
                 };
                 DrawRectangleRounded(rec, 0.1f, 20, get_color_alpha(0x181818, alpha));
                 rec.height = ROW_HEIGHT;
-                rec.width -= ROW_PADDING * 2;
+                rec.width -= ROW_PADDING + SCROLLBAR_AREA_WIDTH * 3;
                 rec.x += ROW_PADDING;
                 rec.y -= ROW_HEIGHT - scroll;
+
+                Rectangle scrollbar_area = {
+                    WIDTH - REC_PADDING - SCROLLBAR_AREA_WIDTH * 2,
+                    0 + REC_PADDING + ROW_PADDING,
+                    SCROLLBAR_AREA_WIDTH,
+                    HEIGHT - REC_PADDING * 2 - ROW_PADDING * 2,
+                };
+                DrawRectangleRounded(scrollbar_area, 0.3f, 20, get_color_alpha(0x444444, alpha));
+
+                Rectangle scrollbar = {
+                    scrollbar_area.x + (SCROLLBAR_AREA_WIDTH - SCROLLBAR_WIDTH) / 2,
+                    scrollbar_area.y + (SCROLLBAR_AREA_WIDTH - SCROLLBAR_WIDTH) / 2,
+                    SCROLLBAR_WIDTH,
+                    scrollbar_area.height - (SCROLLBAR_AREA_WIDTH - SCROLLBAR_WIDTH),
+                };
+                DrawRectangleRounded(scrollbar, 0.3f, 20, get_color_alpha(0x222222, alpha));
 
                 Rectangle valid_area = {
                     rec.x,
@@ -146,6 +164,8 @@ int main(void) {
                     WIDTH - REC_PADDING * 2 - ROW_PADDING * 2,
                     HEIGHT - REC_PADDING * 2 - ROW_PADDING * 2,
                 };
+
+                //NOTE: pay attention when debugging
                 BeginScissorMode(valid_area.x, valid_area.y, valid_area.width, valid_area.height);
 
                 for (int i = 0; i < programs.count; i++) {
@@ -161,12 +181,11 @@ int main(void) {
                             printf("path: %s\n", current_program->relative_path);
                         }
                     }
-                    DrawRectangleRec(rec, color);
+                    DrawRectangleRounded(rec, 0.3f, 20, color);
                     DrawText(TextFormat("%s", programs.data[i].name), rec.x + ROW_PADDING, rec.y + (ROW_HEIGHT / 2) - (PROGRAM_LIST_TEXT_HEIGHT / 2), PROGRAM_LIST_TEXT_HEIGHT, get_color_alpha(0, alpha));
                 }
 
                 EndScissorMode();
-
                 EndBlendMode();
             } break;
             default: break;
