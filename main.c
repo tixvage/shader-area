@@ -108,7 +108,7 @@ int main(void) {
         switch (mode) {
             case Mode_RENDER: {} break;
             case Mode_MENU: {
-                scroll += GetMouseWheelMove() * dt * 400.f;
+                scroll += GetMouseWheelMove() * dt * 800.f;
                 if (IsKeyPressed(KEY_UP)) {
                     scroll += 20;
                 } else if (IsKeyPressed(KEY_DOWN)) {
@@ -154,7 +154,7 @@ int main(void) {
                     SCROLLBAR_AREA_WIDTH,
                     HEIGHT - REC_PADDING * 2 - ROW_PADDING * 2,
                 };
-                DrawRectangleRounded(scrollbar_area, 0.3f, 20, get_color_alpha(0x444444, alpha));
+                DrawRectangleRounded(scrollbar_area, 0.3f, 20, get_color_alpha(0x404040, alpha));
 
                 Rectangle scrollbar_max = {
                     scrollbar_area.x + (SCROLLBAR_AREA_WIDTH - SCROLLBAR_WIDTH) / 2,
@@ -162,13 +162,22 @@ int main(void) {
                     SCROLLBAR_WIDTH,
                     scrollbar_area.height - (SCROLLBAR_AREA_WIDTH - SCROLLBAR_WIDTH),
                 };
-                //TODO: one of the most confusing code I ever wrote, just don't touch for now it's really working
-                Rectangle scrollbar = scrollbar_max;
-                float total_height = max(0, (ROW_HEIGHT + ROW_PADDING) * programs.count - ROW_PADDING);
-                scrollbar.height = total_height - valid_area.height > 0 ? scrollbar_max.height - ((total_height - valid_area.height) / valid_area.height) * scrollbar_max.height : scrollbar_max.height;
-                scrollbar.y -= ((float)scroll / valid_area.height) * scrollbar_max.height;
 
-                DrawRectangleRounded(scrollbar, 0.3f, 20, get_color_alpha(0x222222, alpha));
+                {
+                    //TODO: one of the most confusing code I ever wrote, just don't touch for now it's really working
+                    Rectangle scrollbar = scrollbar_max;
+                    float total_height = max(0, (ROW_HEIGHT + ROW_PADDING) * programs.count - ROW_PADDING);
+                    scrollbar.height = total_height - valid_area.height > 0 ? scrollbar_max.height - ((total_height - valid_area.height) / valid_area.height) * scrollbar_max.height : scrollbar_max.height;
+                    scrollbar.y -= (scroll / valid_area.height) * scrollbar_max.height;
+                    Color color = get_color_alpha(0x111111, alpha);
+                    if (CheckCollisionPointRec(mouse_position, scrollbar)) {
+                        color = ColorBrightness(color, 0.03f);
+                        if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
+                            color = ColorBrightness(color, 0.03f);
+                        }
+                    }
+                    DrawRectangleRounded(scrollbar, 0.3f, 20, color);
+                }
 
                 //NOTE: pay attention when debugging
                 BeginScissorMode(valid_area.x, valid_area.y, valid_area.width, valid_area.height);
