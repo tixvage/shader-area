@@ -44,7 +44,7 @@ int main(void) {
     InitWindow(WIDTH, HEIGHT, "shader");
     SetTargetFPS(60);
 
-    Texture2D tex = LoadTextureFromImage(GenImageColor(WIDTH, HEIGHT, WHITE));
+    Texture2D tex = LoadTextureFromImage(GenImageColor(HEIGHT, HEIGHT, WHITE));
     FilePathList files = LoadDirectoryFilesEx(SHADERS_DIR, ".fs", true);
     for (unsigned int i = 0; i < files.count; i++) {
         Program *p = &programs.data[programs.count++];
@@ -84,10 +84,12 @@ int main(void) {
                     program->last_mod = new_mod;
                     program->shader = LoadShader(NULL, program->relative_path);
                     if (!IsShaderValid(program->shader)) {
+                        //TODO: add popup system
                         printf("error in shader `%s`\n", program->relative_path);
                         program->shader = old_shader;
                     } else {
                         UnloadShader(old_shader);
+                        //TODO: add popup system
                         printf("update in shader `%s`\n", program->relative_path);
                     }
                 }
@@ -107,9 +109,9 @@ int main(void) {
             default: break;
         }
         BeginDrawing();
-        ClearBackground(BLACK);
-        if (current_program) BeginShaderMode(current_program->shader);
-        DrawTexture(tex, 0, 0, WHITE);
+        ClearBackground(GetColor(0x181818FF));
+        if (current_program && IsShaderValid(current_program->shader)) BeginShaderMode(current_program->shader);
+        DrawTexture(tex, (WIDTH - HEIGHT) / 2, 0, WHITE);
         if (current_program) EndShaderMode();
         switch (mode) {
             case Mode_RENDER: {} break;
