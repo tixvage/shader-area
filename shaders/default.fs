@@ -11,6 +11,6 @@ void main()
 {
     vec4 texelColor = texture(texture0, fragTexCoord);
 
-    finalColor = vec4(0.2, 0.2, 0.2, 1);
+    finalColor = vec4(0, 0, 0, 0);
 }
 

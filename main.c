@@ -12,8 +12,8 @@
 #define HEIGHT 600
 #define SHADERS_DIR "./shaders"
 
-#define DEFAULT_TEXT_HEIGHT 20.f
-#define PROGRAM_LIST_TEXT_HEIGHT 30.f
+#define DEFAULT_TEXT_HEIGHT 32.f
+#define PROGRAM_LIST_TEXT_HEIGHT 48.f
 
 #define ROW_HEIGHT 50.f
 #define ROW_PADDING 10.f
@@ -66,6 +66,9 @@ int main(void) {
     SetConfigFlags(FLAG_MSAA_4X_HINT | FLAG_WINDOW_TOPMOST);
     InitWindow(WIDTH, HEIGHT, "shader");
     SetTargetFPS(60);
+
+    Font font_big = LoadFontEx("resources/fonts/Alegreya-Regular.ttf", PROGRAM_LIST_TEXT_HEIGHT, NULL, 0);
+    Font font_small = LoadFontEx("resources/fonts/Alegreya-Regular.ttf", DEFAULT_TEXT_HEIGHT, NULL, 0);
 
     Texture2D tex = LoadTextureFromImage(GenImageColor(HEIGHT, HEIGHT, WHITE));
     FilePathList files = LoadDirectoryFilesEx(SHADERS_DIR, ".fs", true);
@@ -205,7 +208,11 @@ int main(void) {
                         }
                     }
                     DrawRectangleRounded(rec, 0.3f, 20, color);
-                    DrawText(TextFormat("%s", programs.data[i].name), rec.x + ROW_PADDING, rec.y + (ROW_HEIGHT / 2) - (PROGRAM_LIST_TEXT_HEIGHT / 2), PROGRAM_LIST_TEXT_HEIGHT, get_color_alpha(0, alpha));
+                    Vector2 text_position = {
+                        rec.x + ROW_PADDING,
+                        rec.y + (ROW_HEIGHT / 2) - (PROGRAM_LIST_TEXT_HEIGHT / 2),
+                    };
+                    DrawTextEx(font_big, TextFormat("%s", programs.data[i].name), text_position, PROGRAM_LIST_TEXT_HEIGHT, 0, get_color_alpha(0, alpha));
                 }
 
                 EndScissorMode();
@@ -214,7 +221,7 @@ int main(void) {
             default: break;
         }
         const char *program_name = current_program ? current_program->name : "null";
-        DrawText(TextFormat("program: %s", program_name), 5, HEIGHT - (DEFAULT_TEXT_HEIGHT + 5), DEFAULT_TEXT_HEIGHT, BLACK);
+        DrawTextEx(font_small, TextFormat("program: %s", program_name), (Vector2){5, HEIGHT - (DEFAULT_TEXT_HEIGHT + 5)}, DEFAULT_TEXT_HEIGHT, 0, BLACK);
         DrawFPS(5, 5);
         EndDrawing();
     }
