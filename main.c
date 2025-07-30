@@ -20,6 +20,9 @@
 #define REC_PADDING 40.f
 #define SCROLLBAR_AREA_WIDTH 20.f
 #define SCROLLBAR_WIDTH 12.f
+#define POPUP_WIDTH 150.f
+#define POPUP_HEIGHT 100.f
+#define POPUP_PADDING 10.f
 
 typedef struct Program {
     Shader shader;
@@ -34,6 +37,16 @@ static struct Program_List {
     Program data[PROGRAM_CAP];
     int count;
 } programs = { 0 };
+
+typedef struct Popup {
+    float life;
+} Popup;
+
+#define POPUP_CAP 5
+static struct Popup_List {
+    Popup data[POPUP_CAP];
+    int count;
+} popups;
 
 typedef enum Mode {
     Mode_RENDER = 0,
@@ -62,6 +75,7 @@ Color get_color_alpha(int hex, unsigned char alpha) {
 }
 
 int main(void) {
+    popups.count = 3;
                                      //NOTE: for development reasons
     SetConfigFlags(FLAG_MSAA_4X_HINT | FLAG_WINDOW_TOPMOST);
     InitWindow(WIDTH, HEIGHT, "shader");
@@ -85,7 +99,7 @@ int main(void) {
     UnloadDirectoryFiles(files);
 
     float scroll = 0;
-    float saved_position;
+    float saved_position = -1;
     Rectangle scrollbar = scrollbar_max;
 
     while (!WindowShouldClose()) {
@@ -175,7 +189,7 @@ int main(void) {
                     float total_height = max(0, (ROW_HEIGHT + ROW_PADDING) * programs.count - ROW_PADDING);
                     scrollbar.height = total_height - valid_area.height > 0 ? scrollbar_max.height - ((total_height - valid_area.height) / valid_area.height) * scrollbar_max.height : scrollbar_max.height;
                     Color color = get_color_alpha(0x202020, alpha);
-                    if (CheckCollisionPointRec(mouse_position, scrollbar)) {
+                    if (CheckCollisionPointRec(mouse_position, scrollbar) || saved_position != -1) {
                         color = ColorBrightness(color, 0.03f);
                         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
                             saved_position = mouse_position.y - scrollbar.y;
@@ -185,6 +199,9 @@ int main(void) {
                             scrollbar.y = mouse_position.y - saved_position;
                             scrollbar.y = scrollbar_max.y + clamp(scrollbar.y - scrollbar_max.y, 0, scrollbar_max.height - scrollbar.height);
                             scroll = ((scrollbar_max.y - scrollbar.y) / scrollbar_max.height) * valid_area.height;
+                        }
+                        if (IsMouseButtonUp(MOUSE_LEFT_BUTTON)) {
+                            saved_position = -1;
                         }
                     }
                     scrollbar.y = scrollbar_max.y - (scroll / valid_area.height) * scrollbar_max.height;
@@ -196,7 +213,7 @@ int main(void) {
 
                 for (int i = 0; i < programs.count; i++) {
                     rec.y += ROW_HEIGHT + ROW_PADDING;
-                    Color color = get_color_alpha(0x331818, alpha);
+                    Color color = get_color_alpha(0x381818, alpha);
                     if (CheckCollisionPointRec(mouse_position, valid_area) && CheckCollisionPointRec(mouse_position, rec)) {
                         color = ColorBrightness(color, 0.1f);
                         if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
@@ -220,9 +237,14 @@ int main(void) {
             } break;
             default: break;
         }
+        for (int i = 0; i < popups.count; i++) {
+            int x = WIDTH - (POPUP_PADDING + POPUP_WIDTH);
+            int y = HEIGHT - (i + 1) * (POPUP_PADDING + POPUP_HEIGHT);
+
+            DrawRectangle(x, y, POPUP_WIDTH, POPUP_HEIGHT, WHITE);
+        }
         const char *program_name = current_program ? current_program->name : "null";
         DrawTextEx(font_small, TextFormat("program: %s", program_name), (Vector2){5, HEIGHT - (DEFAULT_TEXT_HEIGHT + 5)}, DEFAULT_TEXT_HEIGHT, 0, BLACK);
-        DrawFPS(5, 5);
         EndDrawing();
     }
 
