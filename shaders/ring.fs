@@ -16,7 +16,7 @@ void main()
     d -= 0.3;
     d = abs(d);
     d = 0.01 / d;
-    vec3 color = vec3(d);
+    vec3 color = vec3(d * 0.6, d * 0.5, d * 0.8);
 
     finalColor = vec4(color, 1);
 }

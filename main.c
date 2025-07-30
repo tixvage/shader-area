@@ -75,7 +75,6 @@ Color get_color_alpha(int hex, unsigned char alpha) {
 }
 
 int main(void) {
-    popups.count = 3;
                                      //NOTE: for development reasons
     SetConfigFlags(FLAG_MSAA_4X_HINT | FLAG_WINDOW_TOPMOST);
     InitWindow(WIDTH, HEIGHT, "shader");
@@ -185,9 +184,8 @@ int main(void) {
                 DrawRectangleRounded(scrollbar_area, 0.3f, 20, get_color_alpha(0x0B0B0B, alpha));
 
                 {
-                    //TODO: one of the most confusing code I ever wrote, just don't touch for now it's really working
                     float total_height = max(0, (ROW_HEIGHT + ROW_PADDING) * programs.count - ROW_PADDING);
-                    scrollbar.height = total_height - valid_area.height > 0 ? scrollbar_max.height - ((total_height - valid_area.height) / valid_area.height) * scrollbar_max.height : scrollbar_max.height;
+                    scrollbar.height = total_height / valid_area.height > 1 ? (valid_area.height / total_height) * scrollbar_max.height : scrollbar_max.height;
                     Color color = get_color_alpha(0x202020, alpha);
                     if (CheckCollisionPointRec(mouse_position, scrollbar) || saved_position != -1) {
                         color = ColorBrightness(color, 0.03f);
@@ -198,13 +196,13 @@ int main(void) {
                             color = ColorBrightness(color, 0.03f);
                             scrollbar.y = mouse_position.y - saved_position;
                             scrollbar.y = scrollbar_max.y + clamp(scrollbar.y - scrollbar_max.y, 0, scrollbar_max.height - scrollbar.height);
-                            scroll = ((scrollbar_max.y - scrollbar.y) / scrollbar_max.height) * valid_area.height;
+                            scroll = ((scrollbar_max.y - scrollbar.y) / scrollbar_max.height) * total_height;
                         }
                         if (IsMouseButtonUp(MOUSE_LEFT_BUTTON)) {
                             saved_position = -1;
                         }
                     }
-                    scrollbar.y = scrollbar_max.y - (scroll / valid_area.height) * scrollbar_max.height;
+                    scrollbar.y = scrollbar_max.y - (scroll / total_height) * scrollbar_max.height;
                     DrawRectangleRounded(scrollbar, 0.3f, 20, color);
                 }
 
