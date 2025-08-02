@@ -8,15 +8,16 @@
 #define min(a, b) ((a) < (b) ? (a) : (b))
 #define clamp(x, lower, upper) min(max((x), (lower)), (upper))
 
-#define WIDTH 800
-#define HEIGHT 600
+#define WIDTH 960
+#define HEIGHT 720
 #define SHADERS_DIR "./shaders"
 
-#define DEFAULT_TEXT_HEIGHT 32.f
+#define DEFAULT_TEXT_HEIGHT 24.f
 #define PROGRAM_LIST_TEXT_HEIGHT 48.f
 
+#define DEFAULT_PADDING 2.f
 #define ROW_HEIGHT 50.f
-#define ROW_PADDING 10.f
+#define ROW_PADDING 12.f
 #define REC_PADDING 40.f
 #define SCROLLBAR_AREA_WIDTH 20.f
 #define SCROLLBAR_WIDTH 12.f
@@ -32,7 +33,7 @@ typedef struct Program {
 } Program;
 static Program *current_program = NULL;
 
-#define PROGRAM_CAP 50
+#define PROGRAM_CAP 70
 static struct Program_List {
     Program data[PROGRAM_CAP];
     int count;
@@ -91,7 +92,7 @@ int main(void) {
 
     float scroll = 0;
     float saved_position = -1;
-    bool select_menu = false;
+    bool select_menu = true;
     Rectangle scrollbar = scrollbar_max;
 
     while (!WindowShouldClose()) {
@@ -136,12 +137,12 @@ int main(void) {
 
         BeginDrawing();
         ClearBackground(GetColor(0x111111FF));
+        BeginBlendMode(BLEND_ALPHA);
         if (current_program && IsShaderValid(current_program->shader)) BeginShaderMode(current_program->shader);
         DrawTexture(tex, (WIDTH - HEIGHT) / 2, 0, WHITE);
         if (current_program) EndShaderMode();
 
         if (select_menu) {
-            BeginBlendMode(BLEND_ALPHA);
             int alpha = 0xBB;
             Rectangle rec = {
                 0 + REC_PADDING,
@@ -212,7 +213,6 @@ int main(void) {
             }
 
             EndScissorMode();
-            EndBlendMode();
         }
 
         for (int i = 0; i < popups.count; i++) {
@@ -223,7 +223,19 @@ int main(void) {
         }
 
         const char *program_name = current_program ? current_program->name : "null";
-        DrawTextEx(font_small, TextFormat("program: %s", program_name), (Vector2){5, HEIGHT - (DEFAULT_TEXT_HEIGHT + 5)}, DEFAULT_TEXT_HEIGHT, 0, BLACK);
+        const char *final_text = TextFormat("program: %s", program_name);
+        Vector2 size = MeasureTextEx(font_small, final_text, DEFAULT_TEXT_HEIGHT, 0);
+        Rectangle rec = {
+            DEFAULT_PADDING,
+            HEIGHT - (size.y + DEFAULT_PADDING * 3),
+            size.x + DEFAULT_PADDING * 2,
+            size.y + DEFAULT_PADDING * 2,
+        };
+
+        Color color = get_color_alpha(0xD1D0E4, 0x53);
+        DrawRectangleRounded(rec, 0.3f, 20, color);
+        DrawTextEx(font_small, final_text, (Vector2){DEFAULT_PADDING * 2, HEIGHT - (size.y + DEFAULT_PADDING * 2)}, DEFAULT_TEXT_HEIGHT, 0, BLACK);
+        EndBlendMode();
         EndDrawing();
     }
 
