@@ -48,14 +48,6 @@ static struct Popup_List {
     int count;
 } popups;
 
-typedef enum Mode {
-    Mode_RENDER = 0,
-    Mode_MENU,
-
-    Mode_Count,
-} Mode;
-static Mode mode = Mode_MENU;
-
 const Rectangle scrollbar_area = {
     WIDTH - REC_PADDING - SCROLLBAR_AREA_WIDTH * 2,
     0 + REC_PADDING + ROW_PADDING,
@@ -99,21 +91,14 @@ int main(void) {
 
     float scroll = 0;
     float saved_position = -1;
+    bool select_menu = false;
     Rectangle scrollbar = scrollbar_max;
 
     while (!WindowShouldClose()) {
         float dt = GetFrameTime();
         Vector2 mouse_position = GetMousePosition();
         if (IsKeyPressed(KEY_TAB)) {
-            mode++;
-            if (mode >= Mode_Count) mode = 0;
-            switch (mode) {
-                case Mode_RENDER: {} break;
-                case Mode_MENU: {
-                    scroll = 0;
-                } break;
-                default: break;
-            }
+            select_menu = !select_menu;
         }
 
         if (IsKeyPressed(KEY_R)) {
@@ -138,109 +123,105 @@ int main(void) {
             }
         }
 
-        switch (mode) {
-            case Mode_RENDER: {} break;
-            case Mode_MENU: {
-                scroll += GetMouseWheelMove() * dt * 800.f;
-                if (IsKeyPressed(KEY_UP)) {
-                    scroll += 20;
-                } else if (IsKeyPressed(KEY_DOWN)) {
-                    scroll -= 20;
-                }
-                int limit = max(0, (ROW_HEIGHT + ROW_PADDING) * programs.count - (HEIGHT - REC_PADDING * 2 - ROW_PADDING * 2) - ROW_PADDING);
-                scroll = clamp(scroll, -limit, 0);
-            } break;
-            default: break;
+        if (select_menu) {
+            scroll += GetMouseWheelMove() * dt * 800.f;
+            if (IsKeyPressed(KEY_UP)) {
+                scroll += 20;
+            } else if (IsKeyPressed(KEY_DOWN)) {
+                scroll -= 20;
+            }
+            int limit = max(0, (ROW_HEIGHT + ROW_PADDING) * programs.count - (HEIGHT - REC_PADDING * 2 - ROW_PADDING * 2) - ROW_PADDING);
+            scroll = clamp(scroll, -limit, 0);
         }
+
         BeginDrawing();
         ClearBackground(GetColor(0x111111FF));
         if (current_program && IsShaderValid(current_program->shader)) BeginShaderMode(current_program->shader);
         DrawTexture(tex, (WIDTH - HEIGHT) / 2, 0, WHITE);
         if (current_program) EndShaderMode();
-        switch (mode) {
-            case Mode_RENDER: {} break;
-            case Mode_MENU: {
-                BeginBlendMode(BLEND_ALPHA);
-                int alpha = 0xBB;
-                Rectangle rec = {
-                    0 + REC_PADDING,
-                    0 + REC_PADDING,
-                    WIDTH - REC_PADDING * 2,
-                    HEIGHT - REC_PADDING * 2,
-                };
-                DrawRectangleRounded(rec, 0.1f, 20, get_color_alpha(0x181818, alpha));
-                rec.height = ROW_HEIGHT;
-                rec.width -= ROW_PADDING + SCROLLBAR_AREA_WIDTH * 3;
-                rec.x += ROW_PADDING;
-                rec.y -= ROW_HEIGHT - scroll;
 
-                Rectangle valid_area = {
-                    rec.x,
-                    REC_PADDING + ROW_PADDING,
-                    WIDTH - REC_PADDING * 2 - ROW_PADDING * 2,
-                    HEIGHT - REC_PADDING * 2 - ROW_PADDING * 2,
-                };
+        if (select_menu) {
+            BeginBlendMode(BLEND_ALPHA);
+            int alpha = 0xBB;
+            Rectangle rec = {
+                0 + REC_PADDING,
+                0 + REC_PADDING,
+                WIDTH - REC_PADDING * 2,
+                HEIGHT - REC_PADDING * 2,
+            };
+            DrawRectangleRounded(rec, 0.1f, 20, get_color_alpha(0x181818, alpha));
+            rec.height = ROW_HEIGHT;
+            rec.width -= ROW_PADDING + SCROLLBAR_AREA_WIDTH * 3;
+            rec.x += ROW_PADDING;
+            rec.y -= ROW_HEIGHT - scroll;
 
-                DrawRectangleRounded(scrollbar_area, 0.3f, 20, get_color_alpha(0x0B0B0B, alpha));
+            Rectangle valid_area = {
+                rec.x,
+                REC_PADDING + ROW_PADDING,
+                WIDTH - REC_PADDING * 2 - ROW_PADDING * 2,
+                HEIGHT - REC_PADDING * 2 - ROW_PADDING * 2,
+            };
 
-                {
-                    float total_height = max(0, (ROW_HEIGHT + ROW_PADDING) * programs.count - ROW_PADDING);
-                    scrollbar.height = total_height / valid_area.height > 1 ? (valid_area.height / total_height) * scrollbar_max.height : scrollbar_max.height;
-                    Color color = get_color_alpha(0x202020, alpha);
-                    if (CheckCollisionPointRec(mouse_position, scrollbar) || saved_position != -1) {
+            DrawRectangleRounded(scrollbar_area, 0.3f, 20, get_color_alpha(0x0B0B0B, alpha));
+
+            {
+                float total_height = max(0, (ROW_HEIGHT + ROW_PADDING) * programs.count - ROW_PADDING);
+                scrollbar.height = total_height / valid_area.height > 1 ? (valid_area.height / total_height) * scrollbar_max.height : scrollbar_max.height;
+                Color color = get_color_alpha(0x202020, alpha);
+                if (CheckCollisionPointRec(mouse_position, scrollbar) || saved_position != -1) {
+                    color = ColorBrightness(color, 0.03f);
+                    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                        saved_position = mouse_position.y - scrollbar.y;
+                    }
+                    if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
                         color = ColorBrightness(color, 0.03f);
-                        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-                            saved_position = mouse_position.y - scrollbar.y;
-                        }
-                        if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
-                            color = ColorBrightness(color, 0.03f);
-                            scrollbar.y = mouse_position.y - saved_position;
-                            scrollbar.y = scrollbar_max.y + clamp(scrollbar.y - scrollbar_max.y, 0, scrollbar_max.height - scrollbar.height);
-                            scroll = ((scrollbar_max.y - scrollbar.y) / scrollbar_max.height) * total_height;
-                        }
-                        if (IsMouseButtonUp(MOUSE_LEFT_BUTTON)) {
-                            saved_position = -1;
-                        }
+                        scrollbar.y = mouse_position.y - saved_position;
+                        scrollbar.y = scrollbar_max.y + clamp(scrollbar.y - scrollbar_max.y, 0, scrollbar_max.height - scrollbar.height);
+                        scroll = ((scrollbar_max.y - scrollbar.y) / scrollbar_max.height) * total_height;
                     }
-                    scrollbar.y = scrollbar_max.y - (scroll / total_height) * scrollbar_max.height;
-                    DrawRectangleRounded(scrollbar, 0.3f, 20, color);
-                }
-
-                //NOTE: pay attention when debugging
-                BeginScissorMode(valid_area.x, valid_area.y, valid_area.width, valid_area.height);
-
-                for (int i = 0; i < programs.count; i++) {
-                    rec.y += ROW_HEIGHT + ROW_PADDING;
-                    Color color = get_color_alpha(0x381818, alpha);
-                    if (CheckCollisionPointRec(mouse_position, valid_area) && CheckCollisionPointRec(mouse_position, rec)) {
-                        color = ColorBrightness(color, 0.1f);
-                        if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
-                            color = ColorBrightness(color, 0.3f);
-                        }
-                        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-                            current_program = &programs.data[i];
-                            printf("path: %s\n", current_program->relative_path);
-                        }
+                    if (IsMouseButtonUp(MOUSE_LEFT_BUTTON)) {
+                        saved_position = -1;
                     }
-                    DrawRectangleRounded(rec, 0.3f, 20, color);
-                    Vector2 text_position = {
-                        rec.x + ROW_PADDING,
-                        rec.y + (ROW_HEIGHT / 2) - (PROGRAM_LIST_TEXT_HEIGHT / 2),
-                    };
-                    DrawTextEx(font_big, TextFormat("%s", programs.data[i].name), text_position, PROGRAM_LIST_TEXT_HEIGHT, 0, get_color_alpha(0, alpha));
                 }
+                scrollbar.y = scrollbar_max.y - (scroll / total_height) * scrollbar_max.height;
+                DrawRectangleRounded(scrollbar, 0.3f, 20, color);
+            }
 
-                EndScissorMode();
-                EndBlendMode();
-            } break;
-            default: break;
+            //NOTE: pay attention when debugging
+            BeginScissorMode(valid_area.x, valid_area.y, valid_area.width, valid_area.height);
+
+            for (int i = 0; i < programs.count; i++) {
+                rec.y += ROW_HEIGHT + ROW_PADDING;
+                Color color = get_color_alpha(0x381818, alpha);
+                if (CheckCollisionPointRec(mouse_position, valid_area) && CheckCollisionPointRec(mouse_position, rec)) {
+                    color = ColorBrightness(color, 0.1f);
+                    if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
+                        color = ColorBrightness(color, 0.3f);
+                    }
+                    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                        current_program = &programs.data[i];
+                        printf("path: %s\n", current_program->relative_path);
+                    }
+                }
+                DrawRectangleRounded(rec, 0.3f, 20, color);
+                Vector2 text_position = {
+                    rec.x + ROW_PADDING,
+                    rec.y + (ROW_HEIGHT / 2) - (PROGRAM_LIST_TEXT_HEIGHT / 2),
+                };
+                DrawTextEx(font_big, TextFormat("%s", programs.data[i].name), text_position, PROGRAM_LIST_TEXT_HEIGHT, 0, get_color_alpha(0, alpha));
+            }
+
+            EndScissorMode();
+            EndBlendMode();
         }
+
         for (int i = 0; i < popups.count; i++) {
             int x = WIDTH - (POPUP_PADDING + POPUP_WIDTH);
             int y = HEIGHT - (i + 1) * (POPUP_PADDING + POPUP_HEIGHT);
 
             DrawRectangle(x, y, POPUP_WIDTH, POPUP_HEIGHT, WHITE);
         }
+
         const char *program_name = current_program ? current_program->name : "null";
         DrawTextEx(font_small, TextFormat("program: %s", program_name), (Vector2){5, HEIGHT - (DEFAULT_TEXT_HEIGHT + 5)}, DEFAULT_TEXT_HEIGHT, 0, BLACK);
         EndDrawing();
